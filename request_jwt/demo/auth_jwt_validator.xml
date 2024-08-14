@@ -5,8 +5,8 @@
         <field name="issuer">theissuer</field>
         <field name="signature_type">secret</field>
         <field name="secret_algorithm">HS256</field>
-        <field name="secret_key">My_seCr3t_KeY-ChangE-Me</field>
-        <field name="user_id_strategy">static</field>
+        <field name="secret_key">URe31VxZANUOInHqr/v7reU80239WMQrGPyTh7VXwsHGY6WapXQK+2bCtA==</field>
+        <field name="user_id_strategy">current_user</field>
         <field name="static_user_id" ref="base.user_demo" />
         <field name="partner_id_strategy">email</field>
         <field name="partner_id_required" eval="False" />

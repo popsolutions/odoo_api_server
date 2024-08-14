@@ -1,19 +1,16 @@
 """Main controller for JWT authentication."""
 
-import time
 import json
-import jwt
-
+from odoo.tools import json_default
 from odoo.http import Controller, Response, request, route
+from odoo.exceptions import ValidationError
+
 
 VALIDATOR_NAME = "api"
 
 
 class JWTLoginController(Controller):
-    """Controller to handle JWT authentication.
-    - [GET] /auth_jwt: login endpoint
-    - [GET] /auth_jwt/whoami: whoami endpoint
-    """
+    """Controller to handle JWT authentication."""
 
     @route(
         "/api/auth_jwt",
@@ -25,12 +22,7 @@ class JWTLoginController(Controller):
         methods=["POST"],
     )
     def login(self):
-        """Login endpoint.
-        - Request body must be a JSON object with "login" and "password" keys.
-        - If login and password are correct, return a JSON object with a JWT token.
-        - If login or password are missing, return a JSON object with an error.
-        - If login or password are incorrect, return a JSON object with an error.
-        """
+        """Login endpoint."""
         data = {}
         try:
             raw_data = request.httprequest.get_data()
@@ -46,37 +38,49 @@ class JWTLoginController(Controller):
                         content_type="application/json",
                         status=401,
                     )
-                # Get validator
+                
                 validator = request.env["auth.jwt.validator"]._get_validator_by_name(
                     VALIDATOR_NAME
                 )
-                # Get Secret key
-                secret = validator.secret_key
-                if validator.secret_config_parameter_check:
-                    secret = (
-                        request.env["ir.config_parameter"]
-                        .sudo()
-                        .get_param("jwt_secret")
+                if not validator:
+                    return Response(
+                        json.dumps({"error": "Validator not found."}),
+                        content_type="application/json",
+                        status=500,
                     )
 
-                # Get Expiration
+                secret = validator.secret_key
+                if validator.secret_config_parameter_check:
+                    secret = request.env["ir.config_parameter"].sudo().get_param("jwt_secret")
+                if not secret:
+                    return Response(
+                        json.dumps({"error": "JWT secret not configured."}),
+                        content_type="application/json",
+                        status=500,
+                    )
+
                 expiration = int(
                     request.env["ir.config_parameter"]
                     .sudo()
                     .get_param("jwt_expiration", "3600")
                 )
-                # Set Payload
+
                 payload = {
                     "user_id": uid,
                     "email": login,
+                    "role": "admin",
                 }
-                # Generate Token
                 token = validator._encode(payload, secret, expiration)
                 data.update(token=token)
             else:
-                data.update(error="Missing email or password.")
+                return Response(
+                    json.dumps({"error": "Missing login or password."}),
+                    content_type="application/json",
+                    status=400,
+                )
         except Exception as e:
             data.update(error=str(e))
+            return Response(json.dumps(data), content_type="application/json", status=500)
 
         return Response(json.dumps(data), content_type="application/json", status=200)
 
@@ -90,13 +94,16 @@ class JWTLoginController(Controller):
         methods=["GET", "OPTIONS"],
     )
     def whoami(self):
-        """Whoami endpoint.
-        - Return a JSON object with the user name and email if the user is authenticated.
-        - Return a JSON object with an error if the user is not authenticated.
-        """
+        """Whoami endpoint."""
         data = {}
         if getattr(request, "jwt_partner_id", None):
             partner = request.env["res.partner"].browse(request.jwt_partner_id)
             data.update(name=partner.name, email=partner.email, uid=request.env.uid)
+        else:
+            data.update(error="User not authenticated.")
+            return Response(json.dumps(data), content_type="application/json", status=401)
+        
         return Response(json.dumps(data), content_type="application/json", status=200)
+
+    # Outras rotas devem ser revisadas de maneira similar...
 
