@@ -33,7 +33,7 @@ class JWTResPartnerController(Controller):
                     "name": partner.name,
                     "email": partner.email,
                     "id": partner.id,
-                    "cnpj": partner.vat,
+                    "cnpj": partner.cnpj_cpf,
                     "street": partner.street,
                     "street2": partner.street2,
                     "city": partner.city,
@@ -112,6 +112,8 @@ class JWTResPartnerController(Controller):
                     {
                         "name": post_data["name"],
                         "email": post_data["email"],
+                        "cnpj_cpf":  post_data["cnpj"],
+                        "is_company": True,
                         "street": post_data.get("address", ""),
                         "phone": post_data.get("phone", ""),
                     }
@@ -121,6 +123,8 @@ class JWTResPartnerController(Controller):
                 res_partner={
                     "name": res_partner.name,
                     "email": res_partner.email,
+                    "cnpj_cpf":  post_data["cnpj"],
+                    "is_company": True,
                     "id": res_partner.id,
                     "address": res_partner.street or "N/A",
                     "phone": res_partner.phone or "N/A",
@@ -129,3 +133,35 @@ class JWTResPartnerController(Controller):
         else:
             data.update(error="Missing name or email.")
         return Response(json.dumps(data), content_type="application/json", status=200)
+
+    @route(
+        "/api/res_partner/coutry/<int:country_id>/state/<int:state_id>/cities",
+        type="http",
+        auth="jwt_api",
+        csrf=False,
+        cors="*",
+        save_session=False,
+        methods=["GET", "OPTIONS"],
+    )
+    def get_cities_by_country_and_state(self, country_id, state_id):
+        """Get a list of cities for the specified country_id and state_id."""
+        if not country_id or not state_id:
+            return Response(
+                json.dumps({"error": "country_id and state_id are required"}),
+                content_type="application/json",
+                status=400,
+            )
+        
+        res_partners = request.env["res.partner"].with_user(request.env.uid).search([
+            ('country_id', '=', int(country_id)),
+            ('state_id', '=', int(state_id))
+        ])
+      
+        cities = list(set(partner.city for partner in res_partners if partner.city))
+        
+        return Response(
+            json.dumps({"cities": cities}),
+            content_type="application/json",
+            status=200
+        )
+       
