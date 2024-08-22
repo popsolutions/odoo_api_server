@@ -1,8 +1,11 @@
 """Controller to handle product records."""
 
 import json
+import mimetypes
+import base64
 
 from odoo.http import Controller, Response, request, route
+from odoo.tools.image import image_data_uri
 
 
 class JWTProductsController(Controller):
@@ -34,6 +37,7 @@ class JWTProductsController(Controller):
                         "name": product.categ_id.name,
                         "id": product.categ_id.id,
                     },
+                    "image": f"/api/product/{product.id}/image",
                 }
                 for product in products
             ]
@@ -69,6 +73,7 @@ class JWTProductsController(Controller):
                         "name": product.categ_id.name,
                         "id": product.categ_id.id,
                     },
+                    "image": f"/api/product/{product.id}/image",
                 }
             )
             return Response(
@@ -99,3 +104,35 @@ class JWTProductsController(Controller):
             ]
         )
         return Response(json.dumps(data), content_type="application/json", status=200)
+
+    @route(
+        "/api/product/<int:product_id>/image",
+        type="http",
+        auth="public",
+        csrf=False,
+        cors="*",
+        save_session=False,
+        methods=["GET", "OPTIONS"],
+    )
+    def get_product_image_by_id(self, product_id):
+        """Get a product image by id.
+        - Return the product image as a binary image.
+        - Return a JSON object with an error if the product image is not found.
+        """
+        product = request.env["product.product"].sudo().browse(product_id)
+        if product:
+            image = product.image_1920
+            if image:
+                image_data = image_data_uri(image)
+                image_format = mimetypes.guess_type(image_data)[0]
+                image = base64.b64decode(image)
+                return Response(
+                    image,
+                    content_type=image_format,
+                    status=200,
+                )
+        return Response(
+            json.dumps({"error": "Product image not found."}),
+            content_type="application/json",
+            status=404,
+        )
