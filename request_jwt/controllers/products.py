@@ -26,10 +26,14 @@ class JWTProductsController(Controller):
         data.update(
             products=[
                 {
+                    "id": product.id,
                     "name": product.name,
                     "price": product.list_price,
-                    "id": product.id,
                     "description": product.description_sale or "N/A",
+                    "category": {
+                        "name": product.categ_id.name,
+                        "id": product.categ_id.id,
+                    },
                 }
                 for product in products
             ]
@@ -61,6 +65,10 @@ class JWTProductsController(Controller):
                     "price": product.list_price,
                     "id": product.id,
                     "description": product.description_sale or "N/A",
+                    "category": {
+                        "name": product.categ_id.name,
+                        "id": product.categ_id.id,
+                    },
                 }
             )
             return Response(
@@ -71,3 +79,23 @@ class JWTProductsController(Controller):
             content_type="application/json",
             status=404,
         )
+
+    @route("/api/product/categories", type="http", auth="jwt_api", csrf=False, cors="*")
+    def get_product_categories(self):
+        """Get all product categories.
+        - Return a JSON object with a list of product categories.
+        """
+        data = {}
+        categories = (
+            request.env["product.category"].with_user(request.env.uid).search([])
+        )
+        data.update(
+            categories=[
+                {
+                    "name": category.name,
+                    "id": category.id,
+                }
+                for category in categories
+            ]
+        )
+        return Response(json.dumps(data), content_type="application/json", status=200)
