@@ -1,11 +1,10 @@
 """Controller to handle product records."""
 
 import json
-import mimetypes
-import base64
+
 
 from odoo.http import Controller, Response, request, route
-from odoo.tools.image import image_data_uri
+from .utils import get_image_from_base64, get_image_format
 
 
 class JWTProductsController(Controller):
@@ -123,11 +122,10 @@ class JWTProductsController(Controller):
         if product:
             image = product.image_1920
             if image:
-                image_data = image_data_uri(image)
-                image_format = mimetypes.guess_type(image_data)[0]
-                image = base64.b64decode(image)
+                image_format = get_image_format(image)
+                image_decode = get_image_from_base64(image)
                 return Response(
-                    image,
+                    image_decode,
                     content_type=image_format,
                     status=200,
                 )

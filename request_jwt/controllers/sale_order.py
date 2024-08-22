@@ -1,14 +1,9 @@
 """Controller for the sale order model."""
 
 import json
-import re
 from odoo.http import Controller, Response, request, route
 
-
-def clean_html(html):
-    """Remove HTML tags from a string."""
-    clean = re.compile("<.*?>")
-    return re.sub(clean, "", html)
+from .utils import clean_html
 
 
 class JWTSaleOrderController(Controller):
