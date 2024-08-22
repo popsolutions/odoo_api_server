@@ -1,8 +1,14 @@
 """Controller for the sale order model."""
 
 import json
-
+import re
 from odoo.http import Controller, Response, request, route
+
+
+def clean_html(html):
+    """Remove HTML tags from a string."""
+    clean = re.compile("<.*?>")
+    return re.sub(clean, "", html)
 
 
 class JWTSaleOrderController(Controller):
@@ -158,4 +164,33 @@ class JWTSaleOrderController(Controller):
             )
         except Exception as e:
             data.update({"error": str(e)})
+        return Response(json.dumps(data), content_type="application/json", status=200)
+
+    @route(
+        "/api/sale_order/payment_terms",
+        type="http",
+        auth="jwt_api",
+        csrf=False,
+        cors="*",
+        save_session=False,
+        methods=["GET", "OPTIONS"],
+    )
+    def get_payment_terms(self):
+        """Get all payment terms records.
+        - Return a JSON object with a list of payment terms records.
+        """
+        data = {}
+        payment_terms = (
+            request.env["account.payment.term"].with_user(request.env.uid).search([])
+        )
+        data.update(
+            payment_terms=[
+                {
+                    "id": term.id,
+                    "name": term.name,
+                    "note": clean_html(term.note) or "N/A",
+                }
+                for term in payment_terms
+            ]
+        )
         return Response(json.dumps(data), content_type="application/json", status=200)
