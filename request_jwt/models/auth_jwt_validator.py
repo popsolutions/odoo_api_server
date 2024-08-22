@@ -20,15 +20,12 @@ class AuthJwtInheritValidator(models.Model):
     def _get_uid(self, payload):
         # Validate strategy current_user
         if self.user_id_strategy == "current_user":
-            return (
-                self.env["res.users"].search([("email", "=", payload.get("email"))]).id
-            )
+            return payload.get("user_id")
         return super()._get_uid(payload)
 
     def _get_partner_id(self, payload):
         # override for additional strategies
         if self.user_id_strategy == "current_user":
-            user = self.env["res.users"].search([("email", "=", payload.get("email"))])
+            user = self.env["res.users"].search([("id", "=", payload.get("user_id"))])
             return user.partner_id.id
-
         return super()._get_partner_id(payload)
