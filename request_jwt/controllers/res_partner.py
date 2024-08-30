@@ -35,7 +35,6 @@ class JWTResPartnerController(Controller):
                     "id": partner.id,
                     "cnpj": partner.cnpj_cpf,
                     "street": partner.street,
-                    "street2": partner.street2,
                     "city": partner.city,
                     "state": {
                         "id": partner.state_id.id,
@@ -79,7 +78,17 @@ class JWTResPartnerController(Controller):
                     "name": res_partner.name,
                     "email": res_partner.email,
                     "id": res_partner.id,
-                    "address": res_partner.street or "N/A",
+                    "cnpj": partner.cnpj,
+                    "street": partner.street,
+                    "city": partner.city,
+                    "state": {
+                        "id": partner.state_id.id,
+                        "name": partner.state_id.name,
+                    },
+                    "country": {
+                        "id": partner.country_id.id,
+                        "name": partner.country_id.name,
+                    },
                     "phone": res_partner.phone or "N/A",
                 }
             )
@@ -105,31 +114,68 @@ class JWTResPartnerController(Controller):
         raw_data = request.httprequest.get_data()
         post_data = json.loads(raw_data.decode("utf-8"))
         if "name" in post_data and "email" in post_data:
-            res_partner = (
+            res_partner_check = (
                 request.env["res.partner"]
                 .with_user(request.env.uid)
-                .create(
-                    {
-                        "name": post_data["name"],
-                        "email": post_data["email"],
+                .search([("id", "=", post_data["id"])])
+            )
+            if res_partner_check:
+                res_partner = (
+                    request.env["res.partner"]
+                    .with_user(request.env.uid)
+                    .update(
+                        {
+                            "name": post_data["name"],
+                            "email": post_data["email"],
+                            "cnpj_cpf":  post_data["cnpj"],
+                            "is_company": True,
+                            "street": post_data.get("street", ""),
+                            "city": post_data.get("city", ""), 
+                            "phone": post_data.get("phone", ""),
+                        }
+                    )
+                )
+                data.update(
+                    res_partner={
+                        "name": res_partner.name,
+                        "email": res_partner.email,
                         "cnpj_cpf":  post_data["cnpj"],
                         "is_company": True,
-                        "street": post_data.get("address", ""),
+                        "id": res_partner.id,
+                        "street": post_data.get("street", ""),
+                        "city": post_data.get("city", ""), 
                         "phone": post_data.get("phone", ""),
                     }
+                )   
+ 
+            else:
+                res_partner = (
+                    request.env["res.partner"]
+                    .with_user(request.env.uid)
+                    .create(
+                        {
+                            "name": post_data["name"],
+                            "email": post_data["email"],
+                            "cnpj_cpf":  post_data["cnpj"],
+                            "is_company": True,
+                            "street": post_data.get("street", ""),
+                            "city": post_data.get("city", ""), 
+                            "phone": post_data.get("phone", ""),
+                        }
+                    )
                 )
-            )
-            data.update(
-                res_partner={
-                    "name": res_partner.name,
-                    "email": res_partner.email,
-                    "cnpj_cpf":  post_data["cnpj"],
-                    "is_company": True,
-                    "id": res_partner.id,
-                    "address": res_partner.street or "N/A",
-                    "phone": res_partner.phone or "N/A",
-                }
-            )
+                data.update(
+                    res_partner={
+                        "name": res_partner.name,
+                        "email": res_partner.email,
+                        "cnpj_cpf":  post_data["cnpj"],
+                        "is_company": True,
+                        "id": res_partner.id,
+                        "street": post_data.get("street", ""),
+                        "city": post_data.get("city", ""), 
+                        "phone": post_data.get("phone", ""),
+                    }
+                )   
         else:
             data.update(error="Missing name or email.")
         return Response(json.dumps(data), content_type="application/json", status=200)
