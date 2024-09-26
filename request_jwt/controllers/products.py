@@ -25,6 +25,7 @@ class JWTProductsController(Controller):
         """
         data = {}
         products = request.env["product.product"].with_user(request.env.uid).search([])
+        pricelists = request.env['product.pricelist'].search([])
         data.update(
             products=[
                 {
@@ -37,6 +38,13 @@ class JWTProductsController(Controller):
                         "id": product.categ_id.id,
                     },
                     "image": f"/api/product/{product.id}/image",
+                    "price_lists": [
+                        {
+                            "name": pricelist.name,
+                            "price": pricelist._get_products_price(product, 0),
+                        }
+                        for pricelist in pricelists
+                    ]
                 }
                 for product in products
             ]
