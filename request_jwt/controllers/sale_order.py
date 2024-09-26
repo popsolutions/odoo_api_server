@@ -31,7 +31,6 @@ class JWTSaleOrderController(Controller):
         data.update(
             sale_order=[
                 {
-                    "name": order.name,
                     "date": str(order.date_order),
                     "id": order.id,
                     "partner_id": order.partner_id.id,
@@ -118,7 +117,6 @@ class JWTSaleOrderController(Controller):
                 .with_user(request.env.uid)
                 .create(
                     {
-                        "name": payload.get("name"),
                         "date_order": payload.get("date"),
                         "partner_id": payload.get("partner_id"),
                         "amount_total": payload.get("amount_total"),
@@ -176,7 +174,7 @@ class JWTSaleOrderController(Controller):
         """
         data = {}
         payment_terms = (
-            request.env["account.payment.term"].with_user(request.env.uid).search([])
+            request.env["account.payment.term"].with_context(lang='pt_BR').with_user(request.env.uid).search([])
         )
         data.update(
             payment_terms=[
