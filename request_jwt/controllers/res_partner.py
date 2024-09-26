@@ -1,9 +1,10 @@
 """Controller to handle res.partner records."""
 
 import json
-
+import logging
 from odoo.http import Controller, Response, request, route
 
+_logger = logging.getLogger(__name__)
 
 class JWTResPartnerController(Controller):
     """Controller to handle res.partner records.
@@ -26,7 +27,11 @@ class JWTResPartnerController(Controller):
         - Return a JSON object with a list of res.partner records.
         """
         data = {}
-        res_partner = request.env["res.partner"].with_user(request.env.uid).search([])
+        user = request.env.user
+        team_ids = user.sale_team_ids.ids if hasattr(user, 'sale_team_ids') else [user.sale_team_id.id]
+        res_partner = request.env["res.partner"].with_user(request.env.uid).search([
+                ("team_id", "in", team_ids)
+            ])
         data.update(
             res_partner=[
                 {
