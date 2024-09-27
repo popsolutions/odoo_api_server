@@ -30,7 +30,7 @@ class JWTProductsController(Controller):
             products=[
                 {
                     "id": product.id,
-                    "name": product.name,
+                    "name": product.display_name,
                     "price": product.list_price,
                     "description": product.description_sale or "N/A",
                     "category": {
