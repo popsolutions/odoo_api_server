@@ -40,6 +40,7 @@ class JWTProductsController(Controller):
                     "image": f"/api/product/{product.id}/image",
                     "price_lists": [
                         {
+                            "id": pricelist.id,
                             "name": pricelist.name,
                             "price": pricelist._get_products_price(product, 0),
                         }

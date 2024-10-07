@@ -41,6 +41,7 @@ class JWTResPartnerController(Controller):
                     "cnpj": partner.cnpj_cpf,
                     "street": partner.street,
                     "city": partner.city,
+                    "zip": partner.zip,
                     "state": {
                         "id": partner.state_id.id,
                         "name": partner.state_id.name,

@@ -33,6 +33,7 @@ class JWTSaleOrderController(Controller):
                 {
                     "date": str(order.date_order),
                     "id": order.id,
+                    "name": order.name,
                     "partner_id": order.partner_id.id,
                     "amount_total": order.amount_total,
                     "state": order.state or "N/A",
@@ -150,3 +151,47 @@ class JWTSaleOrderController(Controller):
             ]
         )
         return Response(json.dumps(data), content_type="application/json", status=200)
+
+    @route(
+        "/api/sale_order/states",
+        type="http",
+        auth="jwt_api",
+        csrf=False,
+        cors="*",
+        save_session=False,
+        methods=["GET", "OPTIONS"],
+    )
+    def get_state_sale_order(self):
+        """Get all state order records.
+        - Return a JSON object with a list of sale order records.
+        """
+        data = {}
+        sale_order = request.env["sale.order"].with_user(request.env.uid).search([])
+        data.update(
+            sale_order=[
+                {
+                    "date": str(order.date_order),
+                    "id": order.id,
+                    "name": order.name,
+                    "partner_id": order.partner_id.id,
+                    "amount_total": order.amount_total,
+                    "state": order.state or "N/A",
+                    "pricelist_id": order.pricelist_id.id,
+                    "payment_term_id": order.payment_term_id.id,
+                    "lines": [
+                        {
+                            "id": line.id,
+                            "product_id": line.product_id.id,
+                            "product_name": line.product_id.name,
+                            "quantity": line.product_uom_qty,
+                            "price": line.price_unit,
+                        }
+                        for line in order.order_line
+                    ],
+                }
+                for order in sale_order
+            ]
+        )
+        return Response(json.dumps(data), content_type="application/json", status=200)
+
+
