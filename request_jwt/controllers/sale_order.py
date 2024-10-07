@@ -27,7 +27,10 @@ class JWTSaleOrderController(Controller):
         - Return a JSON object with a list of sale order records.
         """
         data = {}
-        sale_order = request.env["sale.order"].with_user(request.env.uid).search([])
+        user = request.env.user
+        sale_order = request.env["sale.order"].with_user(request.env.uid).search([
+                ("user_id", "=", user.id)
+            ])
         data.update(
             sale_order=[
                 {
