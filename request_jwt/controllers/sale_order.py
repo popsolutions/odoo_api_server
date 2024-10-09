@@ -197,4 +197,30 @@ class JWTSaleOrderController(Controller):
         )
         return Response(json.dumps(data), content_type="application/json", status=200)
 
+    @route(
+        "/api/sale_order/payment_modes",
+        type="http",
+        auth="jwt_api",
+        csrf=False,
+        cors="*",
+        save_session=False,
+        methods=["GET", "OPTIONS"],
+    )
+    def get_payment_modes(self):
+        """Get all state order records.
+        - Return a JSON object with a list of sale order records.
+        """
+        data = {}
+        payment_mode = request.env["account.payment.mode"].with_user(request.env.uid).search([])
+        data.update(
+            payment_mode=[
+                {
+                    "id": mode.id,
+                    "name": mode.name,
+                }
+                for mode in payment_mode
+            ]
+        )
+        return Response(json.dumps(data), content_type="application/json", status=200)
+
 
