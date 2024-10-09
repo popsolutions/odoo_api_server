@@ -117,75 +117,63 @@ class JWTResPartnerController(Controller):
         - Return a JSON object with an error if the name or email is missing.
         """
         data = {}
-        raw_data = request.httprequest.get_data()
-        post_data = json.loads(raw_data.decode("utf-8"))
-        if "name" in post_data and "email" in post_data:
+        user = request.env.user
+        team_ids = user.sale_team_ids.ids if hasattr(user, 'sale_team_ids') else [user.sale_team_id.id]
+
+        try:
+            raw_data = request.httprequest.get_data()
+            post_data = json.loads(raw_data.decode("utf-8"))
+
+            if "name" not in post_data:
+                data.update(error="Missing name.")
+                return Response(json.dumps(data), content_type="application/json", status=400)
+
             res_partner_check = (
                 request.env["res.partner"]
                 .with_user(request.env.uid)
-                .search([("id", "=", post_data["id"])])
+                .search([("id", "=", post_data.get("id"))])
             )
-            if res_partner_check:
-                res_partner = (
-                    request.env["res.partner"]
-                    .with_user(request.env.uid)
-                    .update(
-                        {
-                            "name": post_data["name"],
-                            "email": post_data["email"],
-                            "cnpj_cpf":  post_data["cnpj"],
-                            "is_company": True,
-                            "street": post_data.get("street", ""),
-                            "city": post_data.get("city", ""), 
-                            "phone": post_data.get("phone", ""),
-                        }
-                    )
-                )
-                data.update(
-                    res_partner={
-                        "name": res_partner.name,
-                        "email": res_partner.email,
-                        "cnpj_cpf":  post_data["cnpj"],
-                        "is_company": True,
-                        "id": res_partner.id,
-                        "street": post_data.get("street", ""),
-                        "city": post_data.get("city", ""), 
-                        "phone": post_data.get("phone", ""),
-                    }
-                )   
- 
-            else:
-                res_partner = (
-                    request.env["res.partner"]
-                    .with_user(request.env.uid)
-                    .create(
-                        {
-                            "name": post_data["name"],
-                            "email": post_data["email"],
-                            "cnpj_cpf":  post_data["cnpj"],
-                            "is_company": True,
-                            "street": post_data.get("street", ""),
-                            "city": post_data.get("city", ""), 
-                            "phone": post_data.get("phone", ""),
-                        }
-                    )
-                )
-                data.update(
-                    res_partner={
-                        "name": res_partner.name,
-                        "email": res_partner.email,
-                        "cnpj_cpf":  post_data["cnpj"],
-                        "is_company": True,
-                        "id": res_partner.id,
-                        "street": post_data.get("street", ""),
-                        "city": post_data.get("city", ""), 
-                        "phone": post_data.get("phone", ""),
-                    }
-                )   
-        else:
-            data.update(error="Missing name or email.")
-        return Response(json.dumps(data), content_type="application/json", status=200)
 
+            partner_values = {
+                "name": post_data["name"],
+                "email": post_data.get("email", ""),  # Email não obrigatório
+                "cnpj_cpf": post_data["cnpj_cpf"],
+                "is_company": post_data["is_company"],
+                "street": post_data.get("street", ""),
+                "city": post_data.get("city", ""), 
+                "team_id.id": team_ids,
+                "phone": post_data.get("phone", ""),
+            }   
+    
+            if res_partner_check:
+                res_partner_check.write(partner_values)
+                res_partner = res_partner_check
+            else:
+                res_partner = request.env["res.partner"].with_user(request.env.uid).create(partner_values)
+                                                
+            data.update(
+                res_partner={
+                    "name": res_partner.name,
+                    "email": res_partner.email,
+                    "cnpj_cpf": post_data["cnpj_cpf"],
+                    "is_company": post_data["is_company"],
+                    "id": res_partner.id,
+                    "team_id.id": team_ids,
+                    "street": post_data.get("street", ""),
+                    "city": post_data.get("city", ""), 
+                    "phone": post_data.get("phone", ""),
+                }
+            )
+        except json.JSONDecodeError:
+            data.update(error="Invalid JSON format.")
+            return Response(json.dumps(data), content_type="application/json", status=400)
+            
+        except Exception as e:
+            data.update(error=f"An error occurred: {str(e)}")
+            return Response(json.dumps(data), content_type="application/json", status=500)
+        
+        return Response(json.dumps(data), content_type="application/json", status=200)
+       
     @route(
         "/api/res_partner/coutry/<int:country_id>/state/<int:state_id>/cities",
         type="http",
