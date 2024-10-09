@@ -38,7 +38,7 @@ class JWTResPartnerController(Controller):
                     "name": partner.name,
                     "email": partner.email,
                     "id": partner.id,
-                    "cnpj": partner.cnpj_cpf,
+                    "cnpj_cpf": partner.cnpj_cpf,
                     "street": partner.street,
                     "city": partner.city,
                     "zip": partner.zip,
@@ -84,7 +84,7 @@ class JWTResPartnerController(Controller):
                     "name": res_partner.name,
                     "email": res_partner.email,
                     "id": res_partner.id,
-                    "cnpj": partner.cnpj,
+                    "cnpj_cpf": partner.cnpj_cpf,
                     "street": partner.street,
                     "city": partner.city,
                     "state": {
